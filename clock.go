@@ -20,6 +20,7 @@ type Clock interface {
 	Tick(d time.Duration) <-chan time.Time
 	Ticker(d time.Duration) *Ticker
 	Timer(d time.Duration) *Timer
+	Until(t time.Time) time.Duration
 }
 
 // New returns an instance of a real-time clock.
@@ -54,6 +55,8 @@ func (c *clock) Timer(d time.Duration) *Timer {
 	return &Timer{C: t.C, timer: t}
 }
 
+func (c *clock) Until(t time.Time) time.Duration { return time.Until(t) }
+
 // Mock represents a mock clock that only moves forward programmatically.
 // It can be preferable to a real-time clock when testing time-based functionality.
 type Mock struct {
@@ -61,6 +64,8 @@ type Mock struct {
 	now    time.Time   // current time
 	timers clockTimers // tickers & timers
 }
+
+var _ Clock = (*Mock)(nil)
 
 // NewMock returns an instance of a mock clock.
 // The current time of the mock clock on initialization is the Unix epoch.
@@ -164,6 +169,12 @@ func (m *Mock) Now() time.Time {
 // Since returns time since the mock clock's wall time.
 func (m *Mock) Since(t time.Time) time.Duration {
 	return m.Now().Sub(t)
+}
+
+// Until returns how much time needs to elapse between the mock clock's wall
+// time and the provided Time.
+func (m *Mock) Until(t time.Time) time.Duration {
+	return t.Sub(m.Now())
 }
 
 // Sleep pauses the goroutine for the given duration on the mock clock.
